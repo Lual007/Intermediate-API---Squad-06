@@ -7,9 +7,6 @@ class UserBase(BaseModel):
     email: Optional[str]
     username: Optional[str]
 
-class UserCreate(UserBase):
-    pass
-
 class User(UserBase):
     user_id: int
 
@@ -55,9 +52,6 @@ class AcaoBase(BaseModel):
     user_id: Optional[int]
     data_acao: Optional[datetime]
 
-class AcaoCreate(AcaoBase):
-    pass
-
 class Acao(AcaoBase):
     acao_id: int
 
@@ -70,10 +64,7 @@ class AnaliseSentimentoBase(BaseModel):
     sentimento: str
     score: float
     modelo: Optional[str]
-    data_analysis: datetime
-
-class AnaliseSentimentoCreate(AnaliseSentimentoBase):
-    pass
+    data_analise: datetime
 
 class AnaliseSentimento(AnaliseSentimentoBase):
     analise_id: int
