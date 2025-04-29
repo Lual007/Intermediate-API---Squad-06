@@ -16,28 +16,49 @@ def get_db():
         db.close()
 
 # POST /sentimento
-@router.post("/sentimento")
-def create_sentimento(analise: schemas.AnaliseSentimentoCreate, db: Session = Depends(get_db)):
-    new_sentimento = models.AnaliseSentimento(**analise.dict())
+@router.post("/sentimento/create")
+def create_sentimento(acao: schemas.Acao, db: Session = Depends(get_db)):
+
+    # realizar a requisição com a outra api para gerar a requisição com a coluna "sentimento" com valor
+    new_sentimento = models.AnaliseSentimento(**acao.model_dump())
+
+
     db.add(new_sentimento)
     db.commit()
     db.refresh(new_sentimento)
     return new_sentimento
 
 # GET /sentimento
-@router.get("/sentimento")
+@router.get("/sentimento/all")
 def get_sentimentos(db: Session = Depends(get_db)):
     sentimentos = db.query(models.AnaliseSentimento).all()
     return sentimentos
 
 # GET /sentimentosRecorrentes
-@router.get("/sentimentosRecorrentes")
+@router.get("/sentimento/recorrente")
 def sentimentos_recorrentes(db: Session = Depends(get_db)):
     result = db.query(
         models.AnaliseSentimento.sentimento,
         func.count(models.AnaliseSentimento.sentimento).label("count")
     ).group_by(models.AnaliseSentimento.sentimento).order_by(-func.count(models.AnaliseSentimento.sentimento)).all()
     return result
+
+# GET /sentimento/tecnico/{id}
+@router.get("/sentimento/tecnico/{id}")
+def get_sentimento_by_tecnico(id: int, db: Session = Depends(get_db)):
+    sentimentos = db.query(models.AnaliseSentimento).join(models.Acao)\
+        .filter(models.Acao.agent_id == id).all()
+    return sentimentos
+
+# DELETE /sentimento/{id}
+@router.delete("/sentimento/{id}")
+def delete_sentimento(id: int, db: Session = Depends(get_db)):
+    sentimento = db.query(models.AnaliseSentimento).filter(models.AnaliseSentimento.analise_id == id).first()
+    if not sentimento:
+        raise HTTPException(status_code=404, detail="Sentimento não encontrado")
+    db.delete(sentimento)
+    db.commit()
+    return {"ok": True}
 
 # GET /atendimento
 @router.get("/atendimento")
@@ -90,20 +111,3 @@ def get_cliente(id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
     
     return cliente
-
-# GET /sentimento/tecnico/{id}
-@router.get("/sentimento/tecnico/{id}")
-def get_sentimento_by_tecnico(id: int, db: Session = Depends(get_db)):
-    sentimentos = db.query(models.AnaliseSentimento).join(models.Acao)\
-        .filter(models.Acao.agent_id == id).all()
-    return sentimentos
-
-# DELETE /sentimento/{id}
-@router.delete("/sentimento/{id}")
-def delete_sentimento(id: int, db: Session = Depends(get_db)):
-    sentimento = db.query(models.AnaliseSentimento).filter(models.AnaliseSentimento.analise_id == id).first()
-    if not sentimento:
-        raise HTTPException(status_code=404, detail="Sentimento não encontrado")
-    db.delete(sentimento)
-    db.commit()
-    return {"ok": True}
