@@ -11,7 +11,7 @@ class User(UserBase):
     user_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class AgentBase(BaseModel):
@@ -26,7 +26,7 @@ class Agent(AgentBase):
     agent_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class EventBase(BaseModel):
@@ -42,7 +42,7 @@ class Event(EventBase):
     event_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class AcaoBase(BaseModel):
@@ -56,7 +56,7 @@ class Acao(AcaoBase):
     acao_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class AnaliseSentimentoBase(BaseModel):
@@ -70,4 +70,4 @@ class AnaliseSentimento(AnaliseSentimentoBase):
     analise_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
