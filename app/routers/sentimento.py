@@ -51,7 +51,7 @@ def get_sentimento_by_tecnico(id: int, db: Session = Depends(get_db)):
     return sentimentos
 
 # DELETE /sentimento/{id}
-@router.delete("/sentimento/{id}")
+@router.delete("/sentimento/delete/{id}")
 def delete_sentimento(id: int, db: Session = Depends(get_db)):
     sentimento = db.query(models.AnaliseSentimento).filter(models.AnaliseSentimento.analise_id == id).first()
     if not sentimento:
