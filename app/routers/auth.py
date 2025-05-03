@@ -6,6 +6,7 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 import os
 from .. import models, database
+from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["authentication"])
 
@@ -27,7 +28,7 @@ def criar_access_token(data: dict, expires_delta: timedelta | None = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def obter_usuario_atual(token: str = Depends(oauth2_scheme), db: database.Session = Depends(database.get_db)):
+async def obter_usuario_atual(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
     credentials_exception = HTTPException(
         status_code=401,
         detail="Não foi possível validar as credenciais",
@@ -47,7 +48,7 @@ async def obter_usuario_atual(token: str = Depends(oauth2_scheme), db: database.
 
 # (Dentro da sua função de login no auth.py)
 @router.post("/token")
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: database.Session = Depends(database.get_db)):
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
     user = db.query(models.User).filter(models.User.username == form_data.username).first()
     if not user:
         raise HTTPException(status_code=400, detail="Usuário incorreto")
