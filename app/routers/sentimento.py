@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from .. import models, schemas
 from ..database import get_db
 from ..services import services_sentimentos
+import httpx
+import datetime
 
 router = APIRouter(
     prefix="",
@@ -12,16 +15,41 @@ router = APIRouter(
 
 # POST /sentimento
 @router.post("/sentimento/create")
-def create_sentimento(acao: schemas.Acao, db: Session = Depends(get_db)):
+async def create_sentimento(acao: schemas.Acao, db: Session = Depends(get_db)):
+    """
+    Requisita o modelo para analisar o sentimento e salva o resultado no banco de dados
+    """
+    # TODO:Trocar a url para a da api do modelo
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "http://localhost:8001",
+                json={"texto": acao.descricao}
+            )
+        
+        sentimento_data = response.json()
+        new_sentimento = models.AnaliseSentimento(**acao.model_dump())
+        
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=503, detail=f"Erro ao conectar com o modelo: {str(e)}")
+    
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=response.status_code, detail=f"Erro na API de analise de sentimento: {str(e)}")
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro inesperado: {str(e)}")
+    
 
-    # realizar a requisição com a outra api para gerar a requisição com a coluna "sentimento" com valor
-    new_sentimento = models.AnaliseSentimento(**acao.model_dump())
-
-
-    db.add(new_sentimento)
-    db.commit()
-    db.refresh(new_sentimento)
-    return new_sentimento
+    new_sentimento.acao_id  = acao.acao_id
+    new_sentimento.sentimento = sentimento_data.sentimento
+    new_sentimento.score = sentimento_data.score
+    new_sentimento.modelo = sentimento_data.modelo
+    new_sentimento.data_analise = datetime.now()
+    services_sentimentos.create_sentimento(db, new_sentimento)
+    
+    return JSONResponse(status_code=201, content={
+        "message": "Sentimento criado"
+    })
 
 # GET /sentimento
 @router.get("/sentimento/all")
