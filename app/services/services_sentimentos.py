@@ -1,11 +1,10 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from .. import models
-import datetime
 
 # salvar analise 
 def save_analise(db: Session, analise: models.AnaliseSentimento):
-    
+
     db.add(analise)
     db.commit()
     db.refresh(analise)
