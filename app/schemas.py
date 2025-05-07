@@ -5,6 +5,7 @@ from datetime import datetime
 class UserBase(BaseModel):
     name: str
     email: Optional[str]
+    score_cliente: float
     username: Optional[str]
 
 class User(UserBase):
@@ -17,6 +18,7 @@ class User(UserBase):
 class AgentBase(BaseModel):
     nome: str
     email: Optional[str]
+    score_agente: float
     username: Optional[str]
 
 class AgentCreate(AgentBase):
