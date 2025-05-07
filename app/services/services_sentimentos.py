@@ -1,5 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+
+from app.schemas import Agent, Atendimento, SentimentoRecorrente, User
 from .. import models
 
 # salvar analise 
@@ -33,10 +35,14 @@ def sentimentos_recorrentes(db: Session):
     Returns:
         list[models.AnaliseSentimento]: Uma lista de todos os registros de AnaliseSentimento.
     """
-    return db.query(
-        models.AnaliseSentimento.sentimento,
-        func.count(models.AnaliseSentimento).label("count")
-    ).group_by(models.AnaliseSentimento.sentimento).order_by(-func.count(models.AnaliseSentimento.sentimento)).all()
+    results = db.query(
+            models.AnaliseSentimento.sentimento,
+            func.count(models.AnaliseSentimento.sentimento).label("count")
+            ).group_by(models.AnaliseSentimento.sentimento)\
+                    .order_by(func.count(models.AnaliseSentimento.sentimento).desc())\
+                    .all()
+
+    return [SentimentoRecorrente(sentimento=sentimento, count=count) for sentimento, count in results]
 
 # Sentimentos do técnico por id
 def get_sentimentos_por_id(id: int, db: Session):
@@ -52,8 +58,7 @@ def get_sentimentos_por_id(id: int, db: Session):
     """
     return db.query(models.AnaliseSentimento).join(models.Acao).filter(models.Acao.agent_id == id).all()
 
-# returnar uma lista de atendimentos incluindo informações como conversa o sentimento.
-
+# retornar uma lista de atendimentos incluindo informações como conversa o sentimento.
 def get_atendimento(db: Session):
     """
     Recupera informações de atendimento incluindo conversas, sentimentos, atendentes, etc.
@@ -64,19 +69,20 @@ def get_atendimento(db: Session):
     Returns:
         list[tuple]: Uma lista de tuplas contendo informações de atendimento.
     """
-    return  db.query(
-        models.Event.descricao.label("conversa"),
-        models.AnaliseSentimento.score,
-        models.AnaliseSentimento.sentimento.label("termo"),
-        models.AnaliseSentimento.sentimento.label("sentimento_mais"),
-        models.Agent.nome.label("atendente"),
-        models.AnaliseSentimento.sentimento.label("sentimento_atendente")
-    ).join(models.Acao, models.Acao.event_id == models.Event.event_id)\
-     .join(models.AnaliseSentimento, models.AnaliseSentimento.acao_id == models.Acao.acao_id)\
-     .join(models.Agent, models.Acao.agent_id == models.Agent.agent_id).all()
+    results = db.query(
+            models.Event.descricao.label("conversa"),
+            models.AnaliseSentimento.score,
+            models.AnaliseSentimento.sentimento.label("termo"),
+            models.AnaliseSentimento.sentimento.label("sentimento_mais"),
+            models.Agent.nome.label("atendente"),
+            models.AnaliseSentimento.sentimento.label("sentimento_atendente")
+            ).join(models.Acao, models.Acao.event_id == models.Event.event_id) \
+                    .join(models.AnaliseSentimento, models.AnaliseSentimento.acao_id == models.Acao.acao_id) \
+                    .join(models.Agent, models.Acao.agent_id == models.Agent.agent_id).all()
+
+    return [Atendimento(**row._mapping) for row in results]
 
 # Buscar técnico por id
-
 def get_tecnico(id: int, db: Session):
     """
     Recupera informações de um técnico específico.
@@ -88,16 +94,20 @@ def get_tecnico(id: int, db: Session):
     Returns:
         models.Agent | None: As informações do técnico ou None se não encontrado.
     """
-    return db.query(
-        models.Agent.nome.label("atendente"),
-        models.AnaliseSentimento.sentimento.label("sentimento"),
-        models.AnaliseSentimento.sentimento.label("sentimento_clientes"),
-        models.AnaliseSentimento.sentimento.label("termo"),
-        models.AnaliseSentimento.score
-    ).join(models.Acao, models.Acao.agent_id == models.Agent.agent_id)\
-     .join(models.AnaliseSentimento, models.AnaliseSentimento.acao_id == models.Acao.acao_id)\
-     .filter(models.Agent.agent_id == id).first()
+    agente = db.query(
+            models.Agent.nome.label("atendente"),
+            models.AnaliseSentimento.sentimento.label("sentimento"),
+            models.AnaliseSentimento.sentimento.label("sentimento_clientes"),
+            models.AnaliseSentimento.sentimento.label("termo"),
+            models.AnaliseSentimento.score
+            ).join(models.Acao, models.Acao.agent_id == models.Agent.agent_id)\
+                    .join(models.AnaliseSentimento, models.AnaliseSentimento.acao_id == models.Acao.acao_id)\
+                    .filter(models.Agent.agent_id == id).first()
 
+    if agente == None:
+        return
+
+    return Agent(**agente._asdict())
 
 # Buscar cliente por id 
 
@@ -112,11 +122,16 @@ def get_cliente(id: int, db: Session):
     Returns:
         models.User | None: As informações do cliente ou None se não encontrado.
     """
-    return db.query(
-        models.User.name.label("cliente"),
-        models.AnaliseSentimento.sentimento,
-        models.AnaliseSentimento.sentimento.label("termo"),
-        models.AnaliseSentimento.score
-    ).join(models.Acao, models.Acao.user_id == models.User.user_id)\
-     .join(models.AnaliseSentimento, models.AnaliseSentimento.acao_id == models.Acao.acao_id)\
-     .filter(models.User.user_id == id).first()
+    cliente = db.query(
+            models.User.name.label("cliente"),
+            models.AnaliseSentimento.sentimento,
+            models.AnaliseSentimento.sentimento.label("termo"),
+            models.AnaliseSentimento.score
+            ).join(models.Acao, models.Acao.user_id == models.User.user_id)\
+                    .join(models.AnaliseSentimento, models.AnaliseSentimento.acao_id == models.Acao.acao_id)\
+                    .filter(models.User.user_id == id).first()
+
+    if cliente == None:
+        return
+
+    return User(**cliente._asdict())
