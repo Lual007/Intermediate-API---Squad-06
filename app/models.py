@@ -57,7 +57,7 @@ class Acao(Base):
 class AnaliseSentimento(Base):
     __tablename__ = "cs_analise_sentimento"
     
-    analise_id = Column(Integer, primary_key=True, index=True)
+    analise_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     acao_id = Column(Integer, ForeignKey("cs_acoes.acao_id"), nullable=False)
     sentimento = Column(String(50), nullable=False)
     score = Column(DECIMAL(5,2))
