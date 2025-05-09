@@ -1,15 +1,17 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-
+from ..producers.producer import RabbitMQProducer
 from app.schemas import Agent, Atendimento, SentimentoRecorrente, User
-from .. import models
+from .. import models, schemas
 
 # salvar analise 
-def save_analise(db: Session, analise: models.AnaliseSentimento):
-
-    db.add(analise)
-    db.commit()
-    db.refresh(analise)
+def enviar_menssagem(acao: schemas.AcaoBase, db: Session):
+    publisher = RabbitMQProducer()
+    
+    publisher.send_menssage(acao.descricao)
+    
+    publisher.close_connection()  
+        
 
 # Pegar sentimentos
 def get_sentimentos(db: Session):
