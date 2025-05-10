@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import os
 from .. import models, database
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError, NoResultFound
+from sqlalchemy.exc import SQLAlchemyError
 
 router = APIRouter(tags=["authentication"])
 
