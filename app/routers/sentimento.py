@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -13,6 +14,11 @@ from ..database import get_db
 from ..services import services_sentimentos
 import httpx
 import datetime
+from os import getenv
+
+load_dotenv()
+
+ANALISE_URL = getenv("ANALISE_URL")
 
 router = APIRouter(
     prefix="",
@@ -25,16 +31,30 @@ async def create_sentimento(acao: schemas.Acao, db: Session = Depends(get_db)):
     """
     Requisita o modelo para analisar o sentimento
     """
-    # TODO:Trocar a url para a da api do modelo
+    acao_db = db.query(models.Acao).filter(models.Acao.acao_id == acao.acao_id).first()
+
+    if not acao_db:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Ação não encontrada"
+                )
+    if not acao.descricao:
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ação não possui descrição"
+                )
     try:
         async with httpx.AsyncClient() as client:
+            if ANALISE_URL == None:
+                print("erro ao conectar com o modelo")
+                raise HTTPException(status_code=404, detail=f"erro ao conectar com o modelo")
             response = await client.post(
-                "http://localhost:8001/analisar",
+                ANALISE_URL,
                 json={"text": acao.descricao},
-                # Timeout longo pois o modelo demora a responder, então da erro de conexão
                 timeout=120.0
             )
         sentimento_data = response.json()
+
         # TODO: Retirar o score e modelo hardcoded
         sentimento_dict = {
             "acao_id": acao.acao_id,
@@ -42,8 +62,9 @@ async def create_sentimento(acao: schemas.Acao, db: Session = Depends(get_db)):
             "score": 1.0,
             "modelo": "Emollama-7b",
             "data_analise": datetime.datetime.now(),
+            "acao": acao
         }    
-        # TODO: Gerar o analise id
+
         new_sentimento = models.AnaliseSentimento(**sentimento_dict)
         services_sentimentos.save_analise(db, new_sentimento)
         
