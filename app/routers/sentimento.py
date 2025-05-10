@@ -54,8 +54,12 @@ async def create_sentimento(acao: schemas.Acao, db: Session = Depends(get_db)):
                 timeout=120.0
             )
         sentimento_data = response.json()
+        if not sentimento_data.get("sentiment"):
+            raise HTTPException(
+                status_code=502,
+                detail="Resposta inválida do serviço de análise"
+            )
 
-        # TODO: Retirar o score e modelo hardcoded
         sentimento_dict = {
             "acao_id": acao.acao_id,
             "sentimento": sentimento_data.get("sentiment"),
@@ -69,27 +73,45 @@ async def create_sentimento(acao: schemas.Acao, db: Session = Depends(get_db)):
         services_sentimentos.save_analise(db, new_sentimento)
         
     except httpx.RequestError as e:
-        raise HTTPException(status_code=503, detail=f"Erro ao conectar com o modelo: {repr(e)}")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Erro ao conectar com o serviço de análise: {str(e)}"
+        )
     
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=response.status_code, detail=f"Erro na API de analise de sentimento: {str(e)}")
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail=f"Erro na API de análise de sentimento: {str(e)}"
+        )
     
     except OperationalError as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Erro ao acessar o banco de dados: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao acessar o banco de dados: {e}"
+        )
 
     except (IntegrityError, DataError) as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail="Erro de integridade dos dados ao salvar a análise")
+        raise HTTPException(
+            status_code=400,
+            detail="Erro de integridade dos dados ao salvar a análise"
+        )
 
     except (SQLAlchemyError, Exception) as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Erro inesperado ao salvar a análise no banco: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro inesperado ao salvar a análise no banco: {e}"
+        )
     
-    
-    return JSONResponse(status_code=201, content={
-        "message": "Sentimento criado"
-    })
+    return JSONResponse(
+        status_code=201,
+        content={
+            "message": "Sentimento criado",
+            "sentimento": sentimento_data.get("sentiment")
+        }
+    )
 
 # GET /sentimento
 @router.get("/sentimento/all")
@@ -98,17 +120,25 @@ def get_sentimentos(db: Session = Depends(get_db)):
     Recupera todos os sentimentos.
     """
     try:
-        
         return services_sentimentos.get_sentimentos(db)
     
     except OperationalError as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao acessar o banco de dados: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao acessar o banco de dados: {e}"
+        )
     
     except NoResultFound:
-        raise HTTPException(status_code=404, detail="Nenhum sentimento encontrado")
+        raise HTTPException(
+            status_code=404,
+            detail="Nenhum sentimento encontrado"
+        )
     
     except (Exception, SQLAlchemyError) as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao fazer a busca dos sentimentos no banco: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao buscar sentimentos: {e}"
+        )
 
 # GET /sentimentosRecorrentes
 @router.get("/sentimento/recorrente")
@@ -117,17 +147,25 @@ def sentimentos_recorrentes(db: Session = Depends(get_db)):
     Recupera todos os sentimentos recorrentes.
     """
     try:
-        
         return services_sentimentos.sentimentos_recorrentes(db)
     
     except OperationalError as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao acessar o banco de dados: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao acessar o banco de dados: {e}"
+        )
     
     except NoResultFound:
-        raise HTTPException(status_code=404, detail=f"Nenhum sentimento recorrente encontrado")
+        raise HTTPException(
+            status_code=404,
+            detail="Nenhum sentimento recorrente encontrado"
+        )
     
     except (Exception, SQLAlchemyError) as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao fazer a busca dos sentimentos recorrentes no banco: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao buscar sentimentos recorrentes: {e}"
+        )
 
 # GET /sentimento/tecnico/{id}
 @router.get("/sentimento/tecnico/{id}")
@@ -135,18 +173,32 @@ def get_sentimento_by_tecnico(id: int, db: Session = Depends(get_db)):
     """
     Recupera todos os sentimentos de um técnico.
     """
-    try: 
-        
-        return services_sentimentos.get_sentimentos_por_id(id,db)
+    try:
+        if not id or id <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail="ID do técnico inválido"
+            )
+            
+        return services_sentimentos.get_sentimentos_por_id(id, db)
     
     except OperationalError as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao acessar o banco de dados: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao acessar o banco de dados: {e}"
+        )
     
     except NoResultFound:
-        raise HTTPException(status_code=404, detail=f"Nenhum sentimento do técnivo encontrado")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Nenhum sentimento encontrado para o técnico {id}"
+        )
     
     except (Exception, SQLAlchemyError) as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao fazer a busca dos sentimentos do técnico pelo id: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao buscar sentimentos do técnico: {e}"
+        )
 
 # GET /atendimento
 @router.get("/atendimento")
@@ -176,7 +228,11 @@ def get_tecnico(id: int, db: Session = Depends(get_db)):
     Recupera informações de um técnico específico.
     """
     try: 
-        
+        if not id or id <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail="ID do técnico inválido"
+            )
         return services_sentimentos.get_tecnico(id,db)
         
     except OperationalError as e:
