@@ -14,7 +14,7 @@ def save_analise(db: Session, analise: models.AnaliseSentimento):
     
     except Exception as e:
         db.rollback()
-        raise e
+        raise Exception("Erro ao salvar a análise")
 
 # Pegar sentimentos
 def get_sentimentos(db: Session):
