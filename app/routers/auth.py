@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 import os
 from .. import models, database
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
 
 router = APIRouter(tags=["authentication"])
 
@@ -52,8 +51,8 @@ async def obter_usuario_atual(token: str = Depends(oauth2_scheme), db: Session =
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
     try: 
         user = db.query(models.User).filter(models.User.username == form_data.username).first()
-    except (SQLAlchemyError, Exception) as e:
-        raise HTTPException(status_code=500, detail="Erro inesperado")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro inesperado: {str(e)}")
     
     if not user:
         raise HTTPException(status_code=400, detail="Usuário incorreto")
