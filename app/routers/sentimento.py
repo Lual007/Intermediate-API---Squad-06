@@ -192,4 +192,46 @@ def get_cliente(id: int, db: Session = Depends(get_db)):
             detail=str(e)
         )
     
-    
+# GET /tecnicos
+@router.get("/tecnicos-lista")
+def get_tecnicos(db: Session = Depends(get_db)):
+    try:
+        return services_sentimentos.get_tecnicos(db)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar técnicos: {str(e)}")
+
+# GET /clientes
+@router.get("/clientes-lista")
+def get_clientes(db: Session = Depends(get_db)):
+    return services_sentimentos.get_clientes(db)
+
+# GET /sentimento/by-score
+@router.get("/sentimento/by-score")
+def get_sentimentos_by_score(min: float = 0.0, max: float = 1.0, db: Session = Depends(get_db)):
+    return services_sentimentos.get_sentimentos_by_score(min, max, db)
+
+# GET /sentimento/by-data
+@router.get("/sentimento/by-data")
+def get_sentimentos_by_data(start: datetime.date, end: datetime.date, db: Session = Depends(get_db)):
+    return services_sentimentos.get_sentimentos_by_data(start, end, db)
+
+# Sentimento mais negativo
+@router.get("/sentimento/mais-negativo")
+def get_mais_negativo(db: Session = Depends(get_db)):
+    sentimento_negativo = services_sentimentos.get_sentimento_mais_negativo(db)
+
+    return sentimento_negativo
+
+# GET /sentimento/quantidade
+@router.get("/sentimento/quantidade")
+def get_quantidade_sentimentos(db: Session = Depends(get_db)):
+    print("Chamando a função get_quantidade_sentimentos")
+    quantidade = services_sentimentos.get_quantidade_sentimentos(db)
+    print(f"Quantidade de sentimentos: {quantidade}")
+    return {"quantidade": quantidade}
+
+
+# Get/ sentimento/mais-frequente
+@router.get("/sentimento/mais-frequente")
+def get_sentimento_mais_frequente(db: Session = Depends(get_db)):
+    return services_sentimentos.get_sentimento_mais_frequente(db)
