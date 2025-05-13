@@ -49,11 +49,16 @@ async def obter_usuario_atual(token: str = Depends(oauth2_scheme), db: Session =
 # (Dentro da sua função de login no auth.py)
 @router.post("/token")
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
-    user = db.query(models.User).filter(models.User.username == form_data.username).first()
+    try: 
+        user = db.query(models.User).filter(models.User.username == form_data.username).first()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro inesperado: {str(e)}")
+    
     if not user:
         raise HTTPException(status_code=400, detail="Usuário incorreto")
     if not user.verify_password(form_data.password):
         raise HTTPException(status_code=400, detail="Senha incorreta")
+    
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = criar_access_token(data={"sub": str(user.user_id)}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}

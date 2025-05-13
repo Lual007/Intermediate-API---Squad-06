@@ -39,16 +39,23 @@ async def create_sentimento(acao: schemas.Acao, db: Session = Depends(get_db)):
     try:
         async with httpx.AsyncClient() as client:
             if ANALISE_URL == None:
-                print("erro ao conectar com o modelo")
-                raise HTTPException(status_code=404, detail=f"erro ao conectar com o modelo")
+                print("Erro ao conectar com o modelo")
+                raise HTTPException(
+                        status_code=404, 
+                        detail=f"Erro ao conectar com o modelo"
+                        )
             response = await client.post(
                 ANALISE_URL,
                 json={"text": acao.descricao},
                 timeout=120.0
             )
         sentimento_data = response.json()
+        if not sentimento_data.get("sentiment"):
+            raise HTTPException(
+                status_code=502,
+                detail="Resposta inválida do serviço de análise"
+                )
 
-        # TODO: Retirar o score e modelo hardcoded
         sentimento_dict = {
             "acao_id": acao.acao_id,
             "sentimento": sentimento_data.get("sentiment"),
@@ -59,22 +66,34 @@ async def create_sentimento(acao: schemas.Acao, db: Session = Depends(get_db)):
         }    
 
         new_sentimento = models.AnaliseSentimento(**sentimento_dict)
+        services_sentimentos.save_analise(db, new_sentimento)
         
-    except httpx.RequestError as e:
-        print("Erro ao conectar com o modelo:", repr(e))
-        raise HTTPException(status_code=503, detail=f"Erro ao conectar com o modelo: {repr(e)}")
+    except httpx.RequestError:
+        raise HTTPException(
+                status_code=503,
+                detail="Erro ao conectar com o serviço de análise:"
+                )
     
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=response.status_code, detail=f"Erro na API de analise de sentimento: {str(e)}")
-    
+    except httpx.HTTPStatusError:
+        raise HTTPException(
+                status_code=response.status_code,
+                detail="Erro na API de análise de sentimento"
+                )
+
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro inesperado: {str(e)}")
+        raise HTTPException(
+                status_code=500,
+                detail=str(e)
+                )
     
-    services_sentimentos.save_analise(db, new_sentimento)
-    
-    return JSONResponse(status_code=201, content={
-        "message": "Sentimento criado"
-    })
+    return JSONResponse(
+        status_code=201,
+        content={
+            "message": "Sentimento criado",
+            "sentimento": sentimento_data.get("sentiment")
+        }
+    )
 
 # GET /sentimento
 @router.get("/sentimento/all")
@@ -82,7 +101,14 @@ def get_sentimentos(db: Session = Depends(get_db)):
     """
     Recupera todos os sentimentos.
     """
-    return services_sentimentos.get_sentimentos(db)
+    try:
+        return services_sentimentos.get_sentimentos(db)
+        
+    except Exception as e:
+        raise HTTPException(
+                status_code=500,
+                detail=str(e)
+                )
 
 # GET /sentimentosRecorrentes
 @router.get("/sentimento/recorrente")
@@ -90,7 +116,14 @@ def sentimentos_recorrentes(db: Session = Depends(get_db)):
     """
     Recupera todos os sentimentos recorrentes.
     """
-    return services_sentimentos.sentimentos_recorrentes(db)
+    try:
+        return services_sentimentos.sentimentos_recorrentes(db)
+    
+    except Exception as e:
+        raise HTTPException(
+                status_code=500,
+                detail=str(e)
+                )
 
 # GET /sentimento/tecnico/{id}
 @router.get("/sentimento/tecnico/{id}")
@@ -98,7 +131,15 @@ def get_sentimento_by_tecnico(id: int, db: Session = Depends(get_db)):
     """
     Recupera todos os sentimentos de um técnico.
     """
-    return services_sentimentos.get_sentimentos_por_id(id,db)
+    try:    
+        return services_sentimentos.get_sentimentos_por_id(id, db)
+       
+    
+    except Exception as e:
+        raise HTTPException(
+                status_code=500,
+                detail=str(e)
+                )
 
 # GET /atendimento
 @router.get("/atendimento")
@@ -106,7 +147,17 @@ def get_atendimento(db: Session = Depends(get_db)):
     """
     Recupera as informações de atendimento incluindo conversas, sentimentos, atendentes e clientes.
     """
-    return services_sentimentos.get_atendimento(db)
+    try: 
+        
+        return services_sentimentos.get_atendimento(db)
+    
+    except Exception as e:
+        raise HTTPException(
+                status_code=500, 
+                detail=str(e)
+                )
+    
+    
 
 # GET /tecnico/{id}
 @router.get("/tecnico/{id}")
@@ -114,10 +165,17 @@ def get_tecnico(id: int, db: Session = Depends(get_db)):
     """
     Recupera informações de um técnico específico.
     """
-    tecnico = services_sentimentos.get_tecnico(id,db)
-    if not tecnico:
-        raise HTTPException(status_code=404, detail="Técnico não encontrado") 
-    return tecnico
+    try:    
+            
+        return services_sentimentos.get_tecnico(id, db)
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+    
+    
 
 # GET /cliente/{id}
 @router.get("/cliente/{id}")
@@ -125,11 +183,15 @@ def get_cliente(id: int, db: Session = Depends(get_db)):
     """
     Recupera informações de um cliente específico.
     """
-    cliente = services_sentimentos.get_cliente(id, db)
-    if not cliente:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
-    return cliente
-
+    try:    
+        return services_sentimentos.get_cliente(id, db)
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+    
 # GET /tecnicos
 @router.get("/tecnicos-lista")
 def get_tecnicos(db: Session = Depends(get_db)):
@@ -173,6 +235,3 @@ def get_quantidade_sentimentos(db: Session = Depends(get_db)):
 @router.get("/sentimento/mais-frequente")
 def get_sentimento_mais_frequente(db: Session = Depends(get_db)):
     return services_sentimentos.get_sentimento_mais_frequente(db)
-
-
-
