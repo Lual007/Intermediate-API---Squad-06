@@ -8,7 +8,7 @@ class User(Base):
     user_id = Column(Integer, primary_key=True, index=True)
     name = Column(String(150), nullable=False)
     email = Column(String(70))
-    score_cliente = Column(DECIMAL(5,2))
+    # score_cliente = Column(DECIMAL(5,2))
     username = Column(String(255))
 
     acoes = relationship("Acao", back_populates="user")
@@ -20,7 +20,7 @@ class Agent(Base):
     agent_id = Column(Integer, primary_key=True, index=True)
     nome = Column(String(150))
     email = Column(String)
-    score_agente = Column(DECIMAL(5,2))
+    # score_agente = Column(DECIMAL(5,2))
     username = Column(String)
 
     acoes = relationship("Acao", back_populates="agent")
@@ -57,7 +57,7 @@ class Acao(Base):
 class AnaliseSentimento(Base):
     __tablename__ = "cs_analise_sentimento"
     
-    analise_id = Column(Integer, primary_key=True, index=True)
+    analise_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     acao_id = Column(Integer, ForeignKey("cs_acoes.acao_id"), nullable=False)
     sentimento = Column(String(50), nullable=False)
     score = Column(DECIMAL(5,2))
@@ -65,3 +65,5 @@ class AnaliseSentimento(Base):
     data_analise = Column(TIMESTAMP)
 
     acao = relationship("Acao", back_populates="analises")
+
+
