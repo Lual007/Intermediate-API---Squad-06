@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError, OperationalError, IntegrityError, DataError
 from .. import models, schemas
 from ..database import get_db
 from ..services import services_sentimentos
