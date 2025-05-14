@@ -1,3 +1,4 @@
+# app/routers/auth.py
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.context import CryptContext
@@ -35,7 +36,7 @@ async def obter_usuario_atual(token: str = Depends(oauth2_scheme), db: Session =
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: int = payload.get("sub")
+        user_id: int = payload.get("sub") # Assumindo que o ID do usuário está no 'sub'
         if user_id is None:
             raise credentials_exception
         user = db.query(models.User).filter(models.User.user_id == user_id).first()
@@ -45,6 +46,7 @@ async def obter_usuario_atual(token: str = Depends(oauth2_scheme), db: Session =
     except JWTError:
         raise credentials_exception
 
+# (Dentro da sua função de login no auth.py)
 @router.post("/token")
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
     try: 
@@ -60,3 +62,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = criar_access_token(data={"sub": str(user.user_id)}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
+
+# A classe User já estava definida no seu código anterior, então a mantive.
+# Certifique-se de que ela esteja corretamente definida no seu models.py
+# e que a tabela "users" corresponda à sua definição.
