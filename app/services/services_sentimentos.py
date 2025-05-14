@@ -223,7 +223,7 @@ def get_sentimento_mais_negativo(db: Session):
         return None
 
     return {
-        "id": resultado.id,
+        "analise_id": resultado.analise_id,
         "acao_id": resultado.acao_id,
         "sentimento": resultado.sentimento,
         "score": resultado.score,
