@@ -5,6 +5,7 @@ from ..models import AnaliseSentimento
 from app.schemas import Agent, Atendimento, SentimentoRecorrente, User
 from .. import models
 from fastapi import HTTPException
+from fastapi.encoders import jsonable_encoder
 from datetime import datetime
 
 # salvar analise 
@@ -63,7 +64,8 @@ def sentimentos_recorrentes(db: Session):
     except SQLAlchemyError:
         raise Exception("Erro ao buscar os sentimentos")
 
-    return [SentimentoRecorrente(sentimento=sentimento, count=count) for sentimento, count in results]
+    data = [SentimentoRecorrente(sentimento=sentimento, count=count) for sentimento, count in results]
+    return jsonable_encoder({"sentimento": data})
 
 # Sentimentos do técnico por id
 def get_sentimentos_por_id(id: int, db: Session):
@@ -118,7 +120,8 @@ def get_atendimento(db: Session):
     except SQLAlchemyError:
         raise Exception("Erro ao buscar os sentimentos")
 
-    return [Atendimento(**row._mapping) for row in results]
+    data = [Atendimento(**row._mapping) for row in results]
+    return jsonable_encoder({"sentimento": data})
 
 # Buscar técnico por id
 def get_tecnico(id: int, db: Session):
