@@ -1,12 +1,30 @@
 services:
-  postgres:
-    image: postgres
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
     ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123456
-      POSTGRES_DB: mypost
+      - "5672:5672" 
+      - "15672:15672" 
     volumes:
-      - ./data.sql:/docker-entrypoint-initdb.d/data.sql
+      - rabbitmq_data:/var/lib/rabbitmq
+  mock_api_b:
+    image: mock_api_b:latest
+    container_name: mock_api_b
+    depends_on:
+      - rabbitmq
     restart: always
+
+  api_a:
+    build:
+      context: .
+    container_name: api_a
+    ports:
+      - "8000:8000" 
+    depends_on:
+      - mock_api_b
+      - rabbitmq
+    restart: always
+
+volumes:
+  rabbitmq_data:

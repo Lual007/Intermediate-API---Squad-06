@@ -6,4 +6,9 @@ psycopg2-binary
 python-jose
 passlib
 python-multipart
+<<<<<<< HEAD
 httpx
+pika
+requests
+=======
+>>>>>>> 2a9e8a27577de747f14da76303cc65ada55a3bb1

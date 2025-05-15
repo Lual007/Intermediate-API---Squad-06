@@ -1,24 +1,22 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from sqlalchemy.exc import SQLAlchemyError, NoResultFound
-from ..models import AnaliseSentimento
+
 from app.schemas import Agent, Atendimento, SentimentoRecorrente, User
 from .. import models
-from fastapi import HTTPException
+from producers import RabbitMQProducer
+from sqlalchemy.exc import NoResultFound, SQLAlchemyError
 from fastapi.encoders import jsonable_encoder
-from datetime import datetime
+from app.models import AnaliseSentimento
+from app.models import Acao
 
 # salvar analise 
 def save_analise(db: Session, analise: models.AnaliseSentimento):
-    try:
-        
-        db.add(analise)
-        db.commit()
-        db.refresh(analise)
+
+    publisher = RabbitMQProducer()
     
-    except Exception as e:
-        db.rollback()
-        raise Exception("Erro ao salvar a análise")
+    publisher.send_menssage(db.descricao)
+    
+    publisher.close_connection()  
 
 # Pegar sentimentos
 def get_sentimentos(db: Session):
