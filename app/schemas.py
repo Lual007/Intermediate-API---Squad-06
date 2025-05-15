@@ -48,27 +48,26 @@ class Event(EventBase):
     }
 
 
-class AcaoBase(BaseModel):
+class Acao(BaseModel):
+    acao_id: int
     event_id: int
     descricao: str
     agent_id: Optional[int]
     user_id: Optional[int]
     data_acao: Optional[datetime]
 
-class Acao(AcaoBase):
-    acao_id: int
-
     model_config = {
             "from_attributes": True
     }
 
 class AnaliseSentimento(BaseModel):
+    analise_id: int
     acao_id: int
     sentimento: str
     score: float
     modelo: Optional[str]
     data_analise: datetime
-    analise_id: int
+    acao: Optional[Acao]
 
     model_config = {
             "from_attributes": True

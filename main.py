@@ -15,6 +15,10 @@ origins=[
     "http://127.0.0.1",
     "http://127.0.0.1:8080",
     "http://127.0.0.1:3000",
+<<<<<<< HEAD
+=======
+    "http://localhost:3000",
+>>>>>>> 5d0adcc059b8173e3f2491b7767df81d160be75a
 ]
 app.add_middleware(
     CORSMiddleware,
