@@ -3,13 +3,18 @@ from sqlalchemy import func
 
 from app.schemas import Agent, Atendimento, SentimentoRecorrente, User
 from .. import models
+from producers import RabbitMQProducer
+from sqlalchemy.exc import NoResultFound, SQLAlchemyError
+from fastapi.encoders import jsonable_encoder
+from app.models import AnaliseSentimento
+from app.models import Acao
 
 # salvar analise 
 def save_analise(db: Session, analise: models.AnaliseSentimento):
 
     publisher = RabbitMQProducer()
     
-    publisher.send_menssage(acao.descricao)
+    publisher.send_menssage(db.descricao)
     
     publisher.close_connection()  
 
