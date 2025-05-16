@@ -3,7 +3,7 @@ from sqlalchemy import func
 
 from app.schemas import Agent, Atendimento, SentimentoRecorrente, User
 from .. import models
-from producers import RabbitMQProducer
+from app.producers.producer import RabbitMQProducer
 from sqlalchemy.exc import NoResultFound, SQLAlchemyError
 from fastapi.encoders import jsonable_encoder
 from app.models import AnaliseSentimento

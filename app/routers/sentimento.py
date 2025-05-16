@@ -20,21 +20,10 @@ router = APIRouter(
 
 # POST /sentimento
 @router.post("/sentimento/create")
-async def create_sentimento(acao: schemas.AcaoBase, db: Session = Depends(get_db)):
+async def create_sentimento(acao: schemas.Acao, db: Session = Depends(get_db)):
     """
     Requisita o modelo para analisar o sentimento
     """
-<<<<<<< HEAD
-    try:
-       services_sentimentos.enviar_menssagem(acao,db)
-    except Exception as e:
-        print(f"Erro ao processar a requisição: {repr(e)}")
-        raise HTTPException(status_code=500, detail=f"Erro inesperado: {str(e)}")
-    
-    return JSONResponse(status_code=201, content={
-        "message": "Descrições enviadas com sucesso para análise de sentimento."
-    })
-=======
     acao_db = db.query(models.Acao).filter(models.Acao.acao_id == acao.acao_id).first()
 
     if not acao_db:
@@ -105,8 +94,6 @@ async def create_sentimento(acao: schemas.AcaoBase, db: Session = Depends(get_db
             "sentimento": sentimento_data.get("sentiment")
         }
     )
->>>>>>> 5d0adcc059b8173e3f2491b7767df81d160be75a
-
 
 # POST /sentimento/recebido
 @router.post("/sentimento/recebido")
