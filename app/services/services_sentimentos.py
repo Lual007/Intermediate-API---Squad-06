@@ -242,16 +242,26 @@ def get_quantidade_sentimentos(db: Session):
     return db.query(models.AnaliseSentimento).count()
 
 def get_sentimento_mais_frequente(db):
+    total = db.query(func.count(AnaliseSentimento.sentimento)).scalar()
+
     resultado = db.query(
-        models.AnaliseSentimento.sentimento,
-        func.count(models.AnaliseSentimento.sentimento).label("quantidade")
+        AnaliseSentimento.sentimento,
+        func.count(AnaliseSentimento.sentimento).label("quantidade")
     ).group_by(
-        models.AnaliseSentimento.sentimento
+        AnaliseSentimento.sentimento
     ).order_by(
-        func.count(models.AnaliseSentimento.sentimento).desc()
+        func.count(AnaliseSentimento.sentimento).desc()
     ).first()
 
     if resultado:
-        return {"sentimento_predominante": resultado[0], "quantidade": resultado[1]}
+        sentimento = resultado[0]
+        quantidade = resultado[1]
+        porcentagem = round((quantidade / total) * 100, 2) if total else 0
+
+        return {
+            "sentimento_predominante": sentimento, 
+            "quantidade": quantidade,
+            "porcentagem": porcentagem
+        }
     else:
         return {"message": "Não há sentimentos registrados ainda."}
