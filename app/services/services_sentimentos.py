@@ -206,8 +206,12 @@ def get_sentimentos_by_data(start: str, end: str, db: Session):
 
 # Sentimento negativo com o menor score
 def get_sentimento_mais_negativo(db: Session):
+    sentimentos_negativos = ["raiva", "frustração", "confusão", "urgência"]
+
     resultado = db.query(models.AnaliseSentimento).filter(
-        func.lower(models.AnaliseSentimento.sentimento) == "negativo"
+        func.lower(models.AnaliseSentimento.sentimento).in_(
+            [s.lower() for s in sentimentos_negativos]
+        )
     ).order_by(models.AnaliseSentimento.score.asc()).first()
 
     if not resultado:
@@ -219,7 +223,7 @@ def get_sentimento_mais_negativo(db: Session):
         "sentimento": resultado.sentimento,
         "score": resultado.score,
         "modelo": resultado.modelo,
-        "data_analise": resultado.data_analise.isoformat() if resultado.data_analise else None,
+        "data_analise": resultado.data_analise.isoformat(),
     }
 
 
