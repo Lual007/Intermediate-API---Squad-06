@@ -4,7 +4,7 @@ from sqlalchemy import func
 from app.schemas import Agent, Atendimento, SentimentoRecorrente, User
 from .. import models
 from app.producers.producer import RabbitMQProducer
-from sqlalchemy.exc import NoResultFound, SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 from fastapi.encoders import jsonable_encoder
 from app.models import AnaliseSentimento
 from app.models import Acao
@@ -32,9 +32,6 @@ def get_sentimentos(db: Session):
     try: 
         return db.query(models.AnaliseSentimento).all()
     
-    except NoResultFound:
-        raise Exception("Nenhum sentimento encontrado")
-    
     except SQLAlchemyError:
         raise Exception("Erro ao buscar os sentimentos")
 
@@ -56,8 +53,6 @@ def sentimentos_recorrentes(db: Session):
                 ).group_by(models.AnaliseSentimento.sentimento)\
                         .order_by(func.count(models.AnaliseSentimento.sentimento).desc())\
                         .all()
-    except NoResultFound: 
-        raise Exception("Nenhum sentimento encontrado")
     
     except SQLAlchemyError:
         raise Exception("Erro ao buscar os sentimentos")
@@ -77,14 +72,15 @@ def get_sentimentos_por_id(id: int, db: Session):
     Returns:
         list[models.AnaliseSentimento]: Uma lista de registros de AnaliseSentimento associados ao técnico.
     """
-    try: 
-        if not id or id <= 0:
-            raise Exception("ID inválido")
+    try:
+        sentimentos = db.query(models.AnaliseSentimento)\
+                        .join(models.Acao)\
+                        .filter(models.Acao.agent_id == id).all()
         
-        return db.query(models.AnaliseSentimento).join(models.Acao).filter(models.Acao.agent_id == id).all()
-    
-    except NoResultFound: 
-        raise Exception("Nenhum sentimento encontrado")
+        if not sentimentos:
+            raise Exception("Nenhum sentimento encontrado")
+
+        return sentimentos
     
     except SQLAlchemyError:
         raise Exception("Erro ao buscar os sentimentos")
@@ -112,8 +108,6 @@ def get_atendimento(db: Session):
                         .join(models.AnaliseSentimento, models.AnaliseSentimento.acao_id == models.Acao.acao_id) \
                         .join(models.Agent, models.Acao.agent_id == models.Agent.agent_id).all()
                         
-    except NoResultFound: 
-        raise Exception("Nenhum sentimento encontrado")
     
     except SQLAlchemyError:
         raise Exception("Erro ao buscar os sentimentos")
@@ -147,9 +141,8 @@ def get_tecnico(id: int, db: Session):
                         .join(models.AnaliseSentimento, models.AnaliseSentimento.acao_id == models.Acao.acao_id)\
                         .filter(models.Agent.agent_id == id).first()
 
-        
-    except NoResultFound or agente == None: 
-        raise Exception("Nenhum sentimento encontrado")
+        if agente is None:
+            raise Exception("Nenhum tecnico encontrado")
     
     except SQLAlchemyError:
         raise Exception("Erro ao buscar os sentimentos")
@@ -183,8 +176,8 @@ def get_cliente(id: int, db: Session):
                         .join(models.AnaliseSentimento, models.AnaliseSentimento.acao_id == models.Acao.acao_id)\
                         .filter(models.User.user_id == id).first()
 
-    except NoResultFound or cliente == None: 
-        raise Exception("Nenhum sentimento encontrado")
+        if cliente is None:
+            raise Exception("Nenhum cliente encontrado")
     
     except SQLAlchemyError:
         raise Exception("Erro ao buscar os sentimentos")
