@@ -58,7 +58,7 @@ def sentimentos_recorrentes(db: Session):
         raise Exception("Erro ao buscar os sentimentos")
 
     data = [SentimentoRecorrente(sentimento=sentimento, count=count) for sentimento, count in results]
-    return jsonable_encoder({"sentimento": data})
+    return data
 
 # Sentimentos do técnico por id
 def get_sentimentos_por_id(id: int, db: Session):
