@@ -59,9 +59,10 @@ class AnaliseSentimento(Base):
     
     analise_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     acao_id = Column(Integer, ForeignKey("cs_acoes.acao_id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("cs_user.user_id"))
+    agent_id = Column(Integer, ForeignKey("cs_agents.agent_id"))
     sentimento = Column(String(50), nullable=False)
     score = Column(DECIMAL(5,2))
-    modelo = Column(String(100))
     data_analise = Column(TIMESTAMP)
 
     acao = relationship("Acao", back_populates="analises")

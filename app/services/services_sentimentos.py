@@ -217,15 +217,7 @@ def get_sentimento_mais_negativo(db: Session):
     if not resultado:
         return None
 
-    return {
-        "analise_id": resultado.analise_id,
-        "acao_id": resultado.acao_id,
-        "sentimento": resultado.sentimento,
-        "score": resultado.score,
-        "modelo": resultado.modelo,
-        "data_analise": resultado.data_analise.isoformat(),
-    }
-
+    return resultado 
 
 def get_quantidade_sentimentos(db: Session):
     """

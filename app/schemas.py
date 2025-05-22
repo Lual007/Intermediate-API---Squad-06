@@ -63,9 +63,10 @@ class Acao(BaseModel):
 class AnaliseSentimento(BaseModel):
     analise_id: int
     acao_id: int
+    user_id: int
+    agent_id: int
     sentimento: str
     score: float
-    modelo: Optional[str]
     data_analise: datetime
     acao: Optional[Acao]
 
