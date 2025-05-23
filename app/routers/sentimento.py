@@ -9,6 +9,7 @@ import httpx
 import datetime
 from os import getenv
 
+
 load_dotenv()
 
 ANALISE_URL = getenv("ANALISE_URL")
@@ -20,11 +21,10 @@ router = APIRouter(
 
 # POST /sentimento
 @router.post("/sentimento/create")
-async def create_sentimento(acao: schemas.AcaoBase, db: Session = Depends(get_db)):
+async def create_sentimento(acao: schemas.Acao, db: Session = Depends(get_db)):
     """
     Requisita o modelo para analisar o sentimento
     """
-<<<<<<< HEAD
     try:
        services_sentimentos.enviar_menssagem(acao,db)
     except Exception as e:
@@ -34,78 +34,6 @@ async def create_sentimento(acao: schemas.AcaoBase, db: Session = Depends(get_db
     return JSONResponse(status_code=201, content={
         "message": "Descrições enviadas com sucesso para análise de sentimento."
     })
-=======
-    acao_db = db.query(models.Acao).filter(models.Acao.acao_id == acao.acao_id).first()
-
-    if not acao_db:
-        raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Ação não encontrada"
-                )
-    if not acao.descricao:
-        raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Ação não possui descrição"
-                )
-    try:
-        async with httpx.AsyncClient() as client:
-            if ANALISE_URL == None:
-                print("Erro ao conectar com o modelo")
-                raise HTTPException(
-                        status_code=404, 
-                        detail=f"Erro ao conectar com o modelo"
-                        )
-            response = await client.post(
-                ANALISE_URL,
-                json={"text": acao.descricao},
-                timeout=120.0
-            )
-        sentimento_data = response.json()
-        if not sentimento_data.get("sentiment"):
-            raise HTTPException(
-                status_code=502,
-                detail="Resposta inválida do serviço de análise"
-                )
-
-        sentimento_dict = {
-            "acao_id": acao.acao_id,
-            "sentimento": sentimento_data.get("sentiment"),
-            "score": 1.0,
-            "modelo": "Emollama-7b",
-            "data_analise": datetime.datetime.now(),
-            "acao": acao
-        }    
-
-        new_sentimento = models.AnaliseSentimento(**sentimento_dict)
-        services_sentimentos.save_analise(db, new_sentimento)
-        
-    except httpx.RequestError:
-        raise HTTPException(
-                status_code=503,
-                detail="Erro ao conectar com o serviço de análise:"
-                )
-    
-    except httpx.HTTPStatusError:
-        raise HTTPException(
-                status_code=response.status_code,
-                detail="Erro na API de análise de sentimento"
-                )
-
-
-    except Exception as e:
-        raise HTTPException(
-                status_code=500,
-                detail=str(e)
-                )
-    
-    return JSONResponse(
-        status_code=201,
-        content={
-            "message": "Sentimento criado",
-            "sentimento": sentimento_data.get("sentiment")
-        }
-    )
->>>>>>> 5d0adcc059b8173e3f2491b7767df81d160be75a
 
 
 # POST /sentimento/recebido
@@ -115,11 +43,19 @@ async def receber_sentimento(dados: dict, db: Session = Depends(get_db)):
     Recebe os dados enviados pelo consumer e salva no banco de dados.
     """
     try:
-        texto = dados.get("texto")
+        acao_id = dados.get("acao_id")
+        event_id = dados.get("event_id")
         resultado = dados.get("resultado")
-        print(dados)
-
-        if not texto or not resultado:
+        modelo = dados.get("modelo")
+        enviar = {
+            "acao_id": acao_id,
+            "event_id": event_id,
+            "sentimento": resultado,
+            "modelo": modelo
+        }
+        services_sentimentos.salvar_analise(db,enviar)
+        
+        if not resultado or not resultado:
             raise HTTPException(status_code=400, detail="Texto e resultado são obrigatórios.")
 
     

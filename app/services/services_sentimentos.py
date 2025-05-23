@@ -3,14 +3,35 @@ from sqlalchemy import func
 
 from app.schemas import Agent, Atendimento, SentimentoRecorrente, User
 from .. import models
-from producers import RabbitMQProducer
+from ..producers.producer import RabbitMQProducer
 from sqlalchemy.exc import NoResultFound, SQLAlchemyError
 from fastapi.encoders import jsonable_encoder
 from app.models import AnaliseSentimento
 from app.models import Acao
 
 # salvar analise 
-def save_analise(db: Session, analise: models.AnaliseSentimento):
+def salvar_analise(db: Session, analise: models.AnaliseSentimento):
+    """
+    Salva a análise de sentimento no banco de dados.
+
+    Args:
+        db (Session): A sessão do banco de dados SQLAlchemy.
+        analise (models.AnaliseSentimento): O objeto de análise de sentimento a ser salvo.
+
+    Returns:
+        models.AnaliseSentimento: O objeto salvo no banco de dados.
+    """
+    try:
+        db.add(analise)
+        db.commit()
+        db.refresh(analise)
+        return analise
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise Exception(f"Erro ao salvar a análise: {str(e)}")
+
+# Enviar mensagem   
+def enviar_mensagem(db: Session, analise: models.AnaliseSentimento):
 
     publisher = RabbitMQProducer()
     
