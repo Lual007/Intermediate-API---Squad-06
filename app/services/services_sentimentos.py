@@ -113,7 +113,7 @@ def get_atendimento(db: Session):
         raise Exception("Erro ao buscar os sentimentos")
 
     data = [Atendimento(**row._mapping) for row in results]
-    return jsonable_encoder({"sentimento": data})
+    return data
 
 # Buscar técnico por id
 def get_tecnico(id: int, db: Session):
