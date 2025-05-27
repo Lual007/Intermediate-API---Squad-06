@@ -98,22 +98,24 @@ def get_atendimento(db: Session):
     """
     try: 
         results = db.query(
-                models.Event.descricao.label("conversa"),
-                models.AnaliseSentimento.score,
-                models.AnaliseSentimento.sentimento.label("termo"),
-                models.AnaliseSentimento.sentimento.label("sentimento_mais"),
-                models.Agent.nome.label("atendente"),
-                models.AnaliseSentimento.sentimento.label("sentimento_atendente")
-                ).join(models.Acao, models.Acao.event_id == models.Event.event_id) \
-                        .join(models.AnaliseSentimento, models.AnaliseSentimento.acao_id == models.Acao.acao_id) \
-                        .join(models.Agent, models.Acao.agent_id == models.Agent.agent_id).all()
+            models.Event.descricao.label("conversa"),
+            models.AnaliseSentimento.score,
+            models.AnaliseSentimento.sentimento.label("sentimento"),
+            models.Agent.nome.label("atendente"),
+            models.User.name.label("user"),
+            models.Acao.data_acao,
+            ).join(models.Acao, models.Acao.event_id == models.Event.event_id
+            ).join(models.AnaliseSentimento, models.AnaliseSentimento.acao_id == models.Acao.acao_id
+            ).join(models.Agent, models.Acao.agent_id == models.Agent.agent_id
+            ).join(models.User, models.Acao.user_id == models.User.user_id
+            ).all()
                         
     
     except SQLAlchemyError:
         raise Exception("Erro ao buscar os sentimentos")
 
     data = [Atendimento(**row._mapping) for row in results]
-    return jsonable_encoder({"sentimento": data})
+    return data
 
 # Buscar técnico por id
 def get_tecnico(id: int, db: Session):

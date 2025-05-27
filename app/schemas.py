@@ -77,10 +77,10 @@ class AnaliseSentimento(BaseModel):
 class Atendimento(BaseModel):
     conversa: str
     score: float
-    termo: str
-    sentimento_mais: str
+    sentimento: str
     atendente: str
-    sentimento_atendente: str
+    user: str
+    data_acao: datetime
 
 class SentimentoRecorrente(BaseModel):
     sentimento: str
