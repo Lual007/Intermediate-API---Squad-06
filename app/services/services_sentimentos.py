@@ -7,7 +7,29 @@ from app.producers.producer import RabbitMQProducer
 from sqlalchemy.exc import SQLAlchemyError
 from fastapi.encoders import jsonable_encoder
 from app.models import AnaliseSentimento
-from app.models import Acao
+from .. import schemas
+from fastapi.encoders import jsonable_encoder
+
+def salvar_analise(db: Session, analise: models.AnaliseSentimento):
+    """
+    Salva a análise de sentimento no banco de dados.
+
+    Args:
+        db (Session): A sessão do banco de dados SQLAlchemy.
+        analise (models.AnaliseSentimento): O objeto de análise de sentimento a ser salvo.
+
+    Returns:
+        models.AnaliseSentimento: O objeto salvo no banco de dados.
+    """
+    try:
+        db.add(analise)
+        db.commit()
+        db.refresh(analise)
+        return analise
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise Exception(f"Erro ao salvar a análise: {str(e)}")
+
 
 # salvar analise 
 def save_analise(db: Session, analise: models.AnaliseSentimento):
@@ -18,6 +40,13 @@ def save_analise(db: Session, analise: models.AnaliseSentimento):
     
     publisher.close_connection()  
 
+def enviar_mensagem(acao: schemas.Acao):
+
+    publisher = RabbitMQProducer()
+    
+    publisher.send_menssage(jsonable_encoder(acao))
+
+    publisher.close_connection()  
 # Pegar sentimentos
 def get_sentimentos(db: Session):
     """
