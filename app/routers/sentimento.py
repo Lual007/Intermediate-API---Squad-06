@@ -24,76 +24,16 @@ async def create_sentimento(acao: schemas.Acao, db: Session = Depends(get_db)):
     """
     Requisita o modelo para analisar o sentimento
     """
-    acao_db = db.query(models.Acao).filter(models.Acao.acao_id == acao.acao_id).first()
-
-    if not acao_db:
-        raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Ação não encontrada"
-                )
-    if not acao.descricao:
-        raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Ação não possui descrição"
-                )
     try:
-        async with httpx.AsyncClient() as client:
-            if ANALISE_URL == None:
-                print("Erro ao conectar com o modelo")
-                raise HTTPException(
-                        status_code=404, 
-                        detail=f"Erro ao conectar com o modelo"
-                        )
-            response = await client.post(
-                ANALISE_URL,
-                json={"text": acao.descricao},
-                timeout=120.0
-            )
-        sentimento_data = response.json()
-        if not sentimento_data.get("sentiment"):
-            raise HTTPException(
-                status_code=502,
-                detail="Resposta inválida do serviço de análise"
-                )
-
-        sentimento_dict = {
-            "acao_id": acao.acao_id,
-            "sentimento": sentimento_data.get("sentiment"),
-            "score": 1.0,
-            "modelo": "Emollama-7b",
-            "data_analise": datetime.datetime.now(),
-            "acao": acao
-        }    
-
-        new_sentimento = models.AnaliseSentimento(**sentimento_dict)
-        services_sentimentos.save_analise(db, new_sentimento)
-        
-    except httpx.RequestError:
-        raise HTTPException(
-                status_code=503,
-                detail="Erro ao conectar com o serviço de análise:"
-                )
-    
-    except httpx.HTTPStatusError:
-        raise HTTPException(
-                status_code=response.status_code,
-                detail="Erro na API de análise de sentimento"
-                )
-
-
+       services_sentimentos.enviar_mensagem(acao)
     except Exception as e:
-        raise HTTPException(
-                status_code=500,
-                detail=str(e)
-                )
+        print(f"Erro ao processar a requisição: {repr(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro inesperado: {str(e)}")
     
-    return JSONResponse(
-        status_code=201,
-        content={
-            "message": "Sentimento criado",
-            "sentimento": sentimento_data.get("sentiment")
-        }
-    )
+    return JSONResponse(status_code=200, content={
+        "message": "Descrições enviadas com sucesso para análise de sentimento."
+    })
+
 
 # POST /sentimento/recebido
 @router.post("/sentimento/recebido")
@@ -102,13 +42,24 @@ async def receber_sentimento(dados: dict, db: Session = Depends(get_db)):
     Recebe os dados enviados pelo consumer e salva no banco de dados.
     """
     try:
-        texto = dados.get("texto")
-        resultado = dados.get("resultado")
-        print(dados)
-
-        if not texto or not resultado:
-            raise HTTPException(status_code=400, detail="Texto e resultado são obrigatórios.")
-
+        acao_id = dados.get("acao_id")
+        user_id = dados.get("user_id")
+        agent_id = dados.get("agent_id")
+        descricao = dados.get("sentimento")
+        score = dados.get("score")
+        data = dados.get("data_analise")
+        descricao.capitalize()
+        enviar = {
+            "acao_id": acao_id,
+            "user_id": user_id,
+            "agent_id": agent_id,
+            "sentimento": descricao,
+            "score": score,
+            "data_analise": data
+        }
+        analise = models.AnaliseSentimento(**enviar)
+        services_sentimentos.salvar_analise(db,analise)
+        
     
         return JSONResponse(status_code=201, content={
             "message": "Sentimento recebido"
