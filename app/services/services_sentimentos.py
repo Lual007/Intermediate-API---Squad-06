@@ -1,14 +1,15 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.schemas import Agent, Atendimento, SentimentoRecorrente, User
-from .. import models
 from app.producers.producer import RabbitMQProducer
-from sqlalchemy.exc import SQLAlchemyError
-from fastapi.encoders import jsonable_encoder
 from app.models import AnaliseSentimento
+from .. import models
 from .. import schemas
 from fastapi.encoders import jsonable_encoder
+import re
+import unicodedata
 
 def salvar_analise(db: Session, analise: models.AnaliseSentimento):
     """
@@ -22,6 +23,20 @@ def salvar_analise(db: Session, analise: models.AnaliseSentimento):
         models.AnaliseSentimento: O objeto salvo no banco de dados.
     """
     try:
+        
+        def normalize_word(word: str) -> str:
+            # Convert to lowercase
+            word = word.lower()
+            # Normalize to NFD (decompose characters)
+            word = unicodedata.normalize('NFD', word)
+            # Remove diacritical marks
+            word = re.sub(r'[\u0300-\u036f]', '', word)
+            # Remove punctuation: ', ", ,, .
+            word = re.sub(r"[\'\".,]", '', word)
+            return word
+
+        analise.sentimento = normalize_word(analise.sentimento)
+
         db.add(analise)
         db.commit()
         db.refresh(analise)
