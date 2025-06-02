@@ -253,6 +253,11 @@ def get_sentimentos_by_data(start: str, end: str, db: Session):
 # Sentimento negativo com o menor score
 def get_sentimento_mais_negativo(db: Session):
     sentimentos_negativos = ["raiva", "frustração", "confusão", "urgência"]
+    
+    total_count = db.query(func.count(models.AnaliseSentimento.analise_id)).scalar()
+
+    if total_count == 0:
+        return None
 
     resultado = db.query(models.AnaliseSentimento).filter(
         func.lower(models.AnaliseSentimento.sentimento).in_(
@@ -263,7 +268,17 @@ def get_sentimento_mais_negativo(db: Session):
     if not resultado:
         return None
 
-    return resultado 
+    count_sentimento = db.query(func.count(models.AnaliseSentimento.analise_id)).filter(
+        func.lower(models.AnaliseSentimento.sentimento) == resultado.sentimento.lower()
+    ).scalar()
+
+    percentage = (count_sentimento / total_count) * 100
+
+    return {
+        "sentimento": resultado.sentimento,
+        "score": resultado.score,
+        "porcentagem": round(percentage, 2)
+    }
 
 def get_quantidade_sentimentos(db: Session):
     """
